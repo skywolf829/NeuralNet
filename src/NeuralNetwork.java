@@ -140,26 +140,35 @@ public class NeuralNetwork {
 		}
 		return maxSpot;
 	}
+	
 	public void TrainNeuralNet(ArrayList<double[]> allInputs, ArrayList<double[]> correctResults){
 		for(int i = 0; i < allInputs.size(); i++){
+			// Remember all old weights and biases to find the change after training
 			double oldCost = cost;
 			double[] oldWeightsToHidden = weightsToHidden.clone();
 			double[] oldWeightsToFinal = weightsToFinal.clone();
 			double[] oldBiases = biases.clone();
 			
+			// Train the network on the next piece of data
 			Train(allInputs.get(i), correctResults.get(i), i);
 			
+			// Find the change in each weight, bias, and cost
 			double changeInCost = cost - oldCost;
 			
 		}
 	}
 	public void Train(double[] inputs, double[] correct, int sampleNumber){
+		// Find results
 		double[] results = Activate(inputs);
-		totalDistance += distance(results, correct);
-		cost = (1 / (2 * sampleNumber)) * totalDistance;
 		
+		// Increase the total distance and cost accordingly
+		totalDistance += distance(results, correct);
+		cost = (1 / (2 * sampleNumber)) * totalDistance;		
 	}
 	
+	/**
+	 * Find the distance from any size vector vector1 to the same sized vector vector2
+	 */
 	private double distance(double[] vector1, double[] vector2){
 		double d = 0;
 		for(int i = 0; i < vector1.length; i++){
