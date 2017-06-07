@@ -1,6 +1,8 @@
 import java.util.ArrayList;
 
-import org.apache.commons.math3.linear.*;
+import org.apache.commons.math3.linear.RealMatrix;
+
+
 public class NeuralNetwork {
 	
 	// These hold the sizes for each stage of the neural network
@@ -69,24 +71,14 @@ public class NeuralNetwork {
 	 * Activate the neural network by feeding it inputs and getting the 
 	 * final result in an array
 	 */
-	public double[] Activate(double[] initInputs){
+	public double[] Activate(double[] inputs){
 		
 		//Create an array of doubles for the results		 
 		double[] results = new double[resultsSize];
 		
-		// Create an array of doubles for the new input array		 
-		double[] inputs = new double[initInputs.length + 1];
-	
-		// Copy all input values into the new array		 
-		for(int i = 0; i < initInputs.length; i++){
-			inputs[i] = initInputs[i];
-		}
-		// Then add a bias with a value of 1 in the last spot.
-		inputs[inputs.length - 1] = 1;
-		
 		// Hold the values of each node as it calculates based on weights
 		double[] hiddenNodeValues = new double[hiddenLayerSize];
-		
+
 		// Move from the inputs into the hidden layer
 		for(int i = 0; i < inputs.length; i++){
 			hiddenNodeValues[i] = 0;
@@ -153,12 +145,15 @@ public class NeuralNetwork {
 			// Train the network on the next piece of data
 			Train(allInputs.get(i), correctResults.get(i), i);
 			
-			// Find the change in each weight, bias, and cost
-			double changeInCost = cost - oldCost;
-			double[] changeInWeightsToHidden = difference(oldWeightsToHidden, weightsToHidden);
-			double[] changeInWeightsToFinal = difference(oldWeightsToFinal, weightsToFinal);
-			double[] changeInBiases = difference(oldBiases, biases);
-			
+			// There is only a change in cost if there is a first piece
+			if(i > 0){
+				// Find the change in each weight, bias, and cost
+				double changeInCost = cost - oldCost;
+				double[] changeInWeightsToHidden = difference(oldWeightsToHidden, weightsToHidden);
+				double[] changeInWeightsToFinal = difference(oldWeightsToFinal, weightsToFinal);
+				double[] changeInBiases = difference(oldBiases, biases);
+				
+			}
 		}
 	}
 	public void Train(double[] inputs, double[] correct, int sampleNumber){
