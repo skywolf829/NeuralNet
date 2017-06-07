@@ -1,7 +1,8 @@
 import java.util.ArrayList;
 
+import org.apache.commons.math3.linear.*;
 public class NeuralNetwork {
-
+	
 	// These hold the sizes for each stage of the neural network
 	private int hiddenLayerSize, resultsSize;
 	// Meant to change how quickly the network changes it's weights
@@ -154,6 +155,9 @@ public class NeuralNetwork {
 			
 			// Find the change in each weight, bias, and cost
 			double changeInCost = cost - oldCost;
+			double[] changeInWeightsToHidden = difference(oldWeightsToHidden, weightsToHidden);
+			double[] changeInWeightsToFinal = difference(oldWeightsToFinal, weightsToFinal);
+			double[] changeInBiases = difference(oldBiases, biases);
 			
 		}
 	}
@@ -164,6 +168,13 @@ public class NeuralNetwork {
 		// Increase the total distance and cost accordingly
 		totalDistance += distance(results, correct);
 		cost = (1 / (2 * sampleNumber)) * totalDistance;		
+	}
+	public double[] difference(double[] vector1, double[] vector2){
+		double[] d = new double[vector1.length];
+		for(int i = 0; i < vector1.length; i++){
+			d[i] = vector1[i] - vector2[i];
+		}
+		return d;
 	}
 	
 	/**
