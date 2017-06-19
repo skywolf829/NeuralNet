@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 
-import org.apache.commons.math3.linear.RealMatrix;
-
+import Jama.*;
 
 public class NeuralNetwork {
 	
@@ -55,8 +54,8 @@ public class NeuralNetwork {
 		dWeightsToHidden = new double[input * input];
 		weightsToFinal = new double[hidden * output];
 		dWeightsToFinal = new double[input * input];
-		biases = new double[input];
-		dBiases = new double[input];
+		biases = new double[hidden];
+		dBiases = new double[hidden];
 		RandomizeWeightsAndBiases();
 	}
 	
@@ -78,27 +77,31 @@ public class NeuralNetwork {
 		
 		// Hold the values of each node as it calculates based on weights
 		double[] hiddenNodeValues = new double[hiddenLayerSize];
-
+		
 		// Move from the inputs into the hidden layer
-		for(int i = 0; i < inputs.length; i++){
-			hiddenNodeValues[i] = 0;
+		for(int i = 0; i < inputs.length; i++){			
 			for(int j = 0; j < hiddenLayerSize; j++){
-				hiddenNodeValues[i] += inputs[i] * weightsToHidden[hiddenLayerSize * i + j];
+				hiddenNodeValues[j] += inputs[i] * weightsToHidden[hiddenLayerSize * i + j];
 			}
-			hiddenNodeValues[i] = 1 / (1 + Math.exp(-hiddenNodeValues[i]) - biases[i]);
+		}
+		
+		// Update the node with its bias and Sigmoid the node's value.
+		for(int j = 0; j < hiddenLayerSize; j++){
+			hiddenNodeValues[j] += biases[j];
+			hiddenNodeValues[j] = 1 / (1 + Math.exp(-hiddenNodeValues[j]));
 		}
 		
 		// Keep track of the sum of the results
 		double resultsSum = 0;
+		results = new double[resultsSize];
 		// Move from the hidden layer to the output nodes
-		for(int i = 0; i < hiddenLayerSize; i++){
-			results[i] = 0;
+		for(int i = 0; i < hiddenLayerSize; i++){			
 			for(int j = 0; j < resultsSize; j++){
-				results[i] += hiddenNodeValues[j] * weightsToFinal[resultsSize * i + j];
+				results[j] += hiddenNodeValues[i] * weightsToFinal[resultsSize * i + j];
 			}
-			results[i] = 1 / (1 + Math.exp(-results[i]) - biases[i]);
 			resultsSum += results[i];
 		}	
+		
 		// Normalize the output
 		for(int i = 0; i < resultsSize; i++){
 			results[i] /= resultsSum;
@@ -135,36 +138,59 @@ public class NeuralNetwork {
 	}
 	
 	public void TrainNeuralNet(ArrayList<double[]> allInputs, ArrayList<double[]> correctResults){
+		
+		// Get the correct results into a matrix
+		double[][] resultsArray = new double[correctResults.size()][correctResults.get(0).length];
+		correctResults.toArray(resultsArray);
+		Matrix correctResultsMatrix = new Matrix(resultsArray);
+		
+		// Run the network on the training data and make a matrix with the estimated results
+		Matrix estimatedResultsMatrix = 
+				new Matrix(correctResults.size(), correctResults.get(0).length);
 		for(int i = 0; i < allInputs.size(); i++){
-			// Remember all old weights and biases to find the change after training
-			double oldCost = cost;
-			double[] oldWeightsToHidden = weightsToHidden.clone();
-			double[] oldWeightsToFinal = weightsToFinal.clone();
-			double[] oldBiases = biases.clone();
-			
-			// Train the network on the next piece of data
-			Train(allInputs.get(i), correctResults.get(i), i);
-			
-			// There is only a change in cost if there is a first piece
-			if(i > 0){
-				// Find the change in each weight, bias, and cost
-				double changeInCost = cost - oldCost;
-				double[] changeInWeightsToHidden = difference(oldWeightsToHidden, weightsToHidden);
-				double[] changeInWeightsToFinal = difference(oldWeightsToFinal, weightsToFinal);
-				double[] changeInBiases = difference(oldBiases, biases);
-				
+			double[] answer = Activate(allInputs.get(i));
+			for(int j = 0; j < answer.length; j++){
+				estimatedResultsMatrix.set(i, j, answer[j]);
 			}
 		}
-	}
-	public void Train(double[] inputs, double[] correct, int sampleNumber){
-		// Find results
-		double[] results = Activate(inputs);
 		
-		// Increase the total distance and cost accordingly
-		totalDistance += distance(results, correct);
-		cost = (1 / (2 * sampleNumber)) * totalDistance;		
+		// Create a matrix representing the weights from the inputs to the hidden layer
+		Matrix inputToHidden = new Matrix(allInputs.get(0).length, hiddenLayerSize);
+		for(int i = 0; i < allInputs.get(0).length; i++)
+		{
+			for(int j = 0; j < hiddenLayerSize; j++){
+				inputToHidden.set(i, j, weightsToHidden[i * allInputs.get(0).length + j]);
+			}
+		}
+		
+		// Create a matrix representing the weights from the hidden layer to the outputs
+		Matrix hiddenToFinal = new Matrix(hiddenLayerSize, correctResults.get(0).length);
+		for(int i = 0; i < hiddenLayerSize; i++)
+		{
+			for(int j = 0; j < correctResults.get(0).length; j++){
+				inputToHidden.set(i, j, weightsToFinal[i * hiddenLayerSize + j]);
+			}
+		}
+		
+		Matrix diff = estimatedResultsMatrix.minus(correctResultsMatrix);
 	}
-	public double[] difference(double[] vector1, double[] vector2){
+	
+	private double[] allWeights(){
+		double[] array = new double[weightsToHidden.length 
+		                            + biases.length + weightsToFinal.length];
+		int i = 0;
+		for(i = 0; i < weightsToHidden.length; i++){
+			array[i] = weightsToHidden[i];
+		}
+		for(; i < biases.length + i; i++){
+			array[i] = biases[i];
+		}
+		for(; i < weightsToFinal.length + i; i++){
+			array[i] = weightsToFinal[i];
+		}
+		return array;
+	}
+	private double[] difference(double[] vector1, double[] vector2){
 		double[] d = new double[vector1.length];
 		for(int i = 0; i < vector1.length; i++){
 			d[i] = vector1[i] - vector2[i];
