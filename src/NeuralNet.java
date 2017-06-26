@@ -3,17 +3,18 @@ import java.util.ArrayList;
 
 public class NeuralNet {
 
+	private NeuralNetController controller;
 	private int numInputNodes;
 	private int numHiddenLayers;
 	private int[] nodesPerLayer;
 	private int numOutputNodes;
 	
-	private double learningRate = 0.01;
+	private double learningRate = 0.001;
 	
-	ArrayList<Matrix> hiddenLayerWeightsMatrices;
+	private ArrayList<Matrix> hiddenLayerWeightsMatrices;
 	
-	public NeuralNet(){	
-		
+	public NeuralNet(NeuralNetController c){	
+		controller = c;
 	}
 	public void SetInputSize(int inputSize){
 		numInputNodes = inputSize;
@@ -53,6 +54,7 @@ public class NeuralNet {
 			//Add the matrix to the ArrayList
 			hiddenLayerWeightsMatrices.add(m);
 		}
+		controller.SetHiddenLayerWeights(hiddenLayerWeightsMatrices);
 	}
 	private Matrix ActivationFunction(Matrix input){
 		for(int i = 0; i < input.getRowDimension(); i++){
@@ -86,6 +88,8 @@ public class NeuralNet {
 				}
 			}
 		}
+		controller.SetHiddenLayerWeights(hiddenLayerWeightsMatrices);
+
 	}
 	public double[] Forward(double[] inputs){
 		//Results is always a row vector 
@@ -140,6 +144,7 @@ public class NeuralNet {
 			valuesBeforeActivation.add(results);
 			//Activate each neuron
 			results = ActivationFunction(results);
+			
 			activationValues.add(results);
 		}	
 		//Each row will represent the outputs for the corresponding inputs row
@@ -148,6 +153,7 @@ public class NeuralNet {
 	}
 	public void Train(double[][] inputs, double[][] correctResults){
 		for(int j = 0; j < 10000; j++){
+
 			Matrix inputsMatrix = Matrix.constructWithCopy(inputs);
 			
 			Matrix correctResultsMatrix = Matrix.constructWithCopy(correctResults);
@@ -157,7 +163,6 @@ public class NeuralNet {
 			
 			Matrix estimatedResultsMatrix = ForwardAllTraining(inputsMatrix, 
 					valuesBeforeActivation, activationValues);
-			
 			
 			ArrayList<Matrix> deltas = populateDeltas(correctResultsMatrix, estimatedResultsMatrix,
 					valuesBeforeActivation);
@@ -170,6 +175,8 @@ public class NeuralNet {
 						hiddenLayerWeightsMatrices.get(i).minus(dCost_dWeight));
 			}
 		}
+		controller.SetHiddenLayerWeights(hiddenLayerWeightsMatrices);
+
 	}
 	private ArrayList<Matrix> populateDeltas(Matrix actual, Matrix predicted,
 			ArrayList<Matrix> valuesBeforeActivation){
@@ -187,7 +194,8 @@ public class NeuralNet {
 				w = w.transpose();
 				delta = delta.times(w);
 			}
-			Matrix sigmoidPrimes = ActivationFunctionPrime(valuesBeforeActivation.get(i));
+			Matrix sigmoidPrimes;
+			sigmoidPrimes = ActivationFunctionPrime(valuesBeforeActivation.get(i).copy());
 			delta = ElementwiseMultiplication(delta, sigmoidPrimes);
 			deltas.add(0, delta);
 		}		
@@ -197,11 +205,8 @@ public class NeuralNet {
 	private ArrayList<Matrix> costFunctionPrime(ArrayList<Matrix> deltas, ArrayList<Matrix> activationValues){
 		ArrayList<Matrix> dCost_dWeights = new ArrayList<Matrix>();
 		for(int i = 0; i < hiddenLayerWeightsMatrices.size(); i++){	
-			
-			Matrix dCost_dWeight = activationValues.get(i).copy().transpose();
-					
-			dCost_dWeight = dCost_dWeight.times(deltas.get(i).copy());		
-			
+			Matrix dCost_dWeight = activationValues.get(i).copy().transpose();					
+			dCost_dWeight = dCost_dWeight.times(deltas.get(i).copy());					
 			dCost_dWeights.add(dCost_dWeight);
 		}		
 		return dCost_dWeights;
