@@ -10,11 +10,49 @@ public class NeuralNetController {
 	public NeuralNetController(){	
 		network = new NeuralNet(this);		
 		view = new NeuralNetView(this);
-		view.setSize(500,  400);
+		view.setSize(800,  400);
 	}
 	
 	public void Initialize(){		
 		network.Initialize();
+	}
+	public double[] Forward(double[] inputs){
+		return network.Forward(inputs);
+	}
+	public void TrainOnSineFunction(){
+		ArrayList<double[]> data = new ArrayList<double[]>();
+		ArrayList<double[]> results = new ArrayList<double[]>();
+		for(int j = 0; j < 1; j++){
+			for(int i = 0; i < 100; i++){
+				double x = Math.random();
+				double y = Math.sin(x);
+				data.add(new double[] {x});
+				results.add(new double[] {y});
+			}
+			double[][] d , r;
+			d = new double[][] {{}};
+			r = new double[][] {{}};
+			network.Train(data.toArray(d), results.toArray(r));
+		}
+	}
+	public void TrainOnXSquared(){
+		ArrayList<double[]> data = new ArrayList<double[]>();
+		ArrayList<double[]> results = new ArrayList<double[]>();
+		for(int j = 0; j < 1; j++){
+			for(int i = 0; i < 100; i++){
+				double x = Math.random();
+				double y = x * x;
+				data.add(new double[] {x});
+				results.add(new double[] {y});
+			}
+			double[][] d , r;
+			d = new double[][] {{}};
+			r = new double[][] {{}};
+			network.Train(data.toArray(d), results.toArray(r));
+		}
+	}
+	public void ResetWeights(){
+		network.RandomizeWeights();
 	}
 	public void BeginTraining(){
 		ArrayList<double[]> data = new ArrayList<double[]>();
@@ -52,7 +90,7 @@ public class NeuralNetController {
 	}
 	private static void createDataAndResults1(ArrayList<double[]> data, ArrayList<double[]> results){
 		//Lets work with a function y = x. Result is 0 if below line, 1 if above
-		for(int i = 0; i < 1000; i++){
+		for(int i = 0; i < 100; i++){
 			double x = Math.random() * 20 - 10;
 			double y = Math.random() * 20 - 10;
 			double result[];
@@ -65,7 +103,7 @@ public class NeuralNetController {
 	}
 	private static void createDataAndResults2(ArrayList<double[]> data, ArrayList<double[]> results){
 		//Lets work with a function y = x. Result is 0 if below line, 1 if above
-		for(int i = 0; i < 3000; i++){
+		for(int i = 0; i < 100; i++){
 			double x = Math.random() * 20 - 10;
 			double result = x;
 			double[] d = {x};			

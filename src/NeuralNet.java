@@ -9,7 +9,7 @@ public class NeuralNet {
 	private int[] nodesPerLayer;
 	private int numOutputNodes;
 	
-	private double learningRate = 0.001;
+	private double learningRate = 0.1;
 	
 	private ArrayList<Matrix> hiddenLayerWeightsMatrices;
 	
@@ -48,7 +48,7 @@ public class NeuralNet {
 			//Randomize each entry in the matrix
 			for(int j = 0; j < rows; j++){
 				for(int k = 0; k < cols; k++){
-					m.set(j, k, Math.random());
+					m.set(j, k, Math.random() * 10);
 				}
 			}
 			//Add the matrix to the ArrayList
@@ -84,7 +84,7 @@ public class NeuralNet {
 				//Iterate through the columns
 				for(int k = 0; k < hiddenLayerWeightsMatrices.get(i).getColumnDimension(); k++){
 					//Use a random double
-					hiddenLayerWeightsMatrices.get(i).set(j, k, Math.random());
+					hiddenLayerWeightsMatrices.get(i).set(j, k, Math.random() * 10);
 				}
 			}
 		}
@@ -109,8 +109,6 @@ public class NeuralNet {
 			Matrix weights = hiddenLayerWeightsMatrices.get(i);
 			//Right multiply the results by the weights
 			resultsMatrix = resultsMatrix.times(weights);
-			//If it's not the last layer (i.e. the output node(s)), then we need
-			//	to apply the activation function on each matrix entry
 			resultsMatrix = ActivationFunction(resultsMatrix);
 		}		
 		//The results will be in a row matrix; get the double array copy of that and return;
@@ -135,48 +133,63 @@ public class NeuralNet {
 	private Matrix ForwardAllTraining(Matrix inputs, ArrayList<Matrix> valuesBeforeActivation,
 			ArrayList<Matrix> activationValues){
 		Matrix results = inputs.copy();
-		activationValues.add(results);
+		activationValues.add(results.copy());
 		for(int i = 0; i <= numHiddenLayers; i++){
 			//Get the weights for the current layer
 			Matrix weights = hiddenLayerWeightsMatrices.get(i);
 			//Right multiply the results by the weights
-			results = results.times(weights);
-			valuesBeforeActivation.add(results);
+			results = results.times(weights.copy());
+			valuesBeforeActivation.add(results.copy());
 			//Activate each neuron
 			results = ActivationFunction(results);
 			
-			activationValues.add(results);
+			activationValues.add(results.copy());
 		}	
 		//Each row will represent the outputs for the corresponding inputs row
 		activationValues.remove(activationValues.size() - 1);
 		return results;
 	}
 	public void Train(double[][] inputs, double[][] correctResults){
-		for(int j = 0; j < 10000; j++){
-
-			Matrix inputsMatrix = Matrix.constructWithCopy(inputs);
-			
-			Matrix correctResultsMatrix = Matrix.constructWithCopy(correctResults);
 		
+		
+		int j = 0;
+		while(cost(inputs, correctResults) > 0.01){
+			Matrix inputsMatrix = Matrix.constructWithCopy(inputs);
+
+			Matrix correctResultsMatrix = Matrix.constructWithCopy(correctResults);			
+			
 			ArrayList<Matrix> valuesBeforeActivation = new ArrayList<Matrix>();
 			ArrayList<Matrix> activationValues = new ArrayList<Matrix>();
 			
 			Matrix estimatedResultsMatrix = ForwardAllTraining(inputsMatrix, 
-					valuesBeforeActivation, activationValues);
+					valuesBeforeActivation, activationValues);			
 			
 			ArrayList<Matrix> deltas = populateDeltas(correctResultsMatrix, estimatedResultsMatrix,
 					valuesBeforeActivation);
 			
 			ArrayList<Matrix> dCost_dWeights = costFunctionPrime(deltas, activationValues);
+			//ArrayList<Matrix> dCostWithEpsilon = checkGradients(inputs, correctResults);
+
 			for(int i = 0; i < hiddenLayerWeightsMatrices.size(); i++){
 				Matrix dCost_dWeight = dCost_dWeights.get(i).copy();
-				dCost_dWeight.times(learningRate);
+				//Matrix dCostdEps = dCostWithEpsilon.get(i).copy();
+				//PrintMatrix(dCost_dWeight);
+				//PrintMatrix(dCostdEps);
+				dCost_dWeight = dCost_dWeight.times(learningRate);
+				//dCostdEps = dCostdEps.times(learningRate);
+				
 				hiddenLayerWeightsMatrices.set(i, 
+						//hiddenLayerWeightsMatrices.get(i).minus(dCostdEps));
 						hiddenLayerWeightsMatrices.get(i).minus(dCost_dWeight));
+			}
+			System.out.println(cost(inputs, correctResults));
+			j++;
+			if(j >= 50000){
+				RandomizeWeights();
+				j = 0;
 			}
 		}
 		controller.SetHiddenLayerWeights(hiddenLayerWeightsMatrices);
-
 	}
 	private ArrayList<Matrix> populateDeltas(Matrix actual, Matrix predicted,
 			ArrayList<Matrix> valuesBeforeActivation){
@@ -197,7 +210,7 @@ public class NeuralNet {
 			Matrix sigmoidPrimes;
 			sigmoidPrimes = ActivationFunctionPrime(valuesBeforeActivation.get(i).copy());
 			delta = ElementwiseMultiplication(delta, sigmoidPrimes);
-			deltas.add(0, delta);
+			deltas.add(0, delta.copy());
 		}		
 		
 		return deltas;
@@ -211,7 +224,19 @@ public class NeuralNet {
 		}		
 		return dCost_dWeights;
 	}
-	
+	private double cost(double[][] input, double output[][]){
+		double c = 0;
+		for(int i = 0; i < input.length; i++){
+			double[] results = Forward(input[i]);
+			
+			for(int j = 0; j < results.length; j++){
+				c += Math.pow(output[i][j] - results[j], 2);
+			}
+		}
+		c /= 2.0;
+		
+		return c;
+	}
 	public void PrintMatrix(Matrix m){
 		for(int i = 0; i < m.getRowDimension(); i++){
 			for(int j = 0; j < m.getColumnDimension(); j++){
@@ -229,5 +254,28 @@ public class NeuralNet {
 			}
 		}
 		return m;
+	}
+	private ArrayList<Matrix> checkGradients(double[][] inputs, double[][] outputs){
+		double e = 0.0001;
+		ArrayList<Matrix> dCosts = new ArrayList<Matrix>();
+		for(int i = 0; i <= numHiddenLayers; i++){
+			Matrix m = new Matrix(hiddenLayerWeightsMatrices.get(i).getRowDimension(),
+					hiddenLayerWeightsMatrices.get(i).getColumnDimension());
+			
+			for(int j = 0; j < hiddenLayerWeightsMatrices.get(i).getRowDimension(); j++){
+				//Iterate through the columns
+				for(int k = 0; k < hiddenLayerWeightsMatrices.get(i).getColumnDimension(); k++){
+					double originalValue = hiddenLayerWeightsMatrices.get(i).get(j, k);
+					hiddenLayerWeightsMatrices.get(i).set(j, k, originalValue + e);					
+					double c1 = cost(inputs, outputs);
+					hiddenLayerWeightsMatrices.get(i).set(j, k, originalValue - e);
+					double c2 = cost(inputs, outputs);
+					hiddenLayerWeightsMatrices.get(i).set(j, k, originalValue);
+					m.set(j, k, (c1 - c2) / (e * 2));
+				}
+			}
+			dCosts.add(m);
+		}
+		return dCosts;
 	}
 }

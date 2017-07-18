@@ -25,15 +25,17 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 	
 	private DrawingPanel panel;
 	
-	private JLabel input, hidden, output;
-	private JTextField numInputNodesTextField, hiddenLayersTextField, outputNodesTextField;
-	private JButton createNeuralNetButton;
+	private JLabel input, hidden, output, training;
+	private JTextField numInputNodesTextField, hiddenLayersTextField, outputNodesTextField,
+		trainingFileTextField;
+	private ArrayList<JTextField> inputTextFields, outputTextFields;
+	private JButton createNeuralNetButton, trainButton, computeButton, resetWeightsButton;
 	
 	private int buttonHeight = 50,
 			buttonWidth = 150,
 			buttonPanelSpacing = 30,
 			textAreaWidth = 330,
-			textAreaHeight = 40,
+			textAreaHeight = 300,
 			textAreaXOffset = 20,
 			bufferSpace = 100, 
 			neuronSize = 50, 
@@ -91,9 +93,79 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 		controller.SetNumOutputNodes(outputs);
 		populateNeurons();
 		populateSynapses();
+		clearOldInputsAndOutputs();
+		populateInputTextFields();
+		populateOutputTextFields();
 		controller.Initialize();
-		
+		panel.repositionItems();		
+
+	}
+	private void trainButtonPressed(){
+		training.setText("Training...");
 		panel.repositionItems();
+		controller.TrainOnSineFunction();
+		training.setText("Training complete!");
+		panel.repositionItems();
+		this.setSize(new Dimension(this.getWidth() + 1, this.getHeight()));
+		
+	}
+	private void computeButtonPressed(){
+		double[] inputs = new double[inputTextFields.size()];
+		for(int i = 0; i < inputTextFields.size(); i++){
+			inputs[i] = Double.parseDouble(inputTextFields.get(i).getText());
+		}
+		double[] results = controller.Forward(inputs);
+		for(int i = 0; i < results.length; i++){
+			outputTextFields.get(i).setText(((int)(results[i] * 10000)) / 10000.0 + "");
+			
+		}
+		panel.repositionItems();
+	}
+	private void resetWeightsButtonPressed(){
+		controller.ResetWeights();
+		panel.repositionItems();
+	}
+	private void clearOldInputsAndOutputs(){
+		if(inputTextFields != null){
+			while(inputTextFields.size() > 0){
+				panel.remove(inputTextFields.get(0));
+				inputTextFields.remove(0);
+			}
+		}
+		if(outputTextFields != null){
+			while(outputTextFields.size() > 0){
+				panel.remove(outputTextFields.get(0));
+				outputTextFields.remove(0);
+			}
+		}
+		if(computeButton != null)
+			panel.remove(computeButton);
+	}
+	private void populateInputTextFields(){
+		inputTextFields = new ArrayList<JTextField>();		
+		
+		for(int i = 0; i < numInputNodes; i++){
+			JTextField in = new JTextField();
+			in.setEditable(true);
+			in.setColumns(4);
+			in.setText("");in.addActionListener(this);
+			inputTextFields.add(in);
+			panel.add(in);
+		}
+		computeButton = new JButton("Compute output");
+		computeButton.addActionListener(this);
+		panel.add(computeButton);
+	}
+	private void populateOutputTextFields(){
+		outputTextFields = new ArrayList<JTextField>();		
+		for(int i = 0; i < numOutputNodes; i++){
+			JTextField out = new JTextField();
+			out.setEditable(false);
+			out.setColumns(4);
+			out.setText("");
+			outputTextFields.add(out);
+			panel.add(out);
+		}
 	}
 	private void populateNeurons(){
 		int currentLayer = 0;
@@ -125,6 +197,7 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			}			
 		}
 		neurons.add(layer);	
+		
 	}
 	private void populateSynapses(){
 		synapses = new ArrayList<ArrayList<ArrayList<Synapse>>>();
@@ -211,6 +284,19 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			createNeuralNetButton = new JButton("Create");
 			createNeuralNetButton.addActionListener(frame);
 			
+			training = new JLabel("Enter the training data file");
+			trainingFileTextField = new JTextField();
+			trainingFileTextField.setEditable(true);
+			trainingFileTextField.setColumns(8);
+			trainingFileTextField.setText("Filename.txt");
+			trainingFileTextField.addActionListener(frame);
+			
+			trainButton = new JButton("Train network");
+			trainButton.addActionListener(frame);
+			
+			resetWeightsButton = new JButton("Reset weights");
+			resetWeightsButton.addActionListener(frame);
+			
 			this.add(input);
 			this.add(numInputNodesTextField);
 			this.add(hidden);
@@ -218,6 +304,10 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			this.add(output);
 			this.add(outputNodesTextField);
 			this.add(createNeuralNetButton);
+			this.add(training);
+			this.add(trainingFileTextField);
+			this.add(trainButton);
+			this.add(resetWeightsButton);
 			
 			pack();
 		}
@@ -258,15 +348,22 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			w = (int)(w * neuronSize + (w - 1) * distanceBetweenNeurons);
 			return w;
 		}
-		public void repositionItems(){
-			widthNeeded = textAreaWidth + bufferSpace + nodesWidthNeeded();
-			extraWidth = this.getWidth() - widthNeeded;
-			if(extraWidth < 0) extraWidth = 0;
-			
-			if(nodesHeightNeeded() > 200) heightNeeded = nodesHeightNeeded();
-			else heightNeeded = 200;
+		public int GetRequiredHeight(){
+			if(nodesHeightNeeded() > textAreaHeight) heightNeeded = nodesHeightNeeded() + bufferSpace;
+			else heightNeeded = textAreaHeight + bufferSpace;
 			extraHeight = this.getHeight() - heightNeeded;
 			if(extraHeight < 0) extraHeight = 0;
+			return heightNeeded;
+		}
+		public int GetRequiredWidth(){
+			widthNeeded = textAreaWidth + bufferSpace + nodesWidthNeeded() + bufferSpace;
+			extraWidth = this.getWidth() - widthNeeded;
+			if(extraWidth < 0) extraWidth = 0;
+			return widthNeeded;
+		}
+		public void repositionItems(){
+			GetRequiredWidth();
+			GetRequiredHeight();
 			
 			input.setLocation(extraWidth / 2, 0 + extraHeight / 2);
 			numInputNodesTextField.setLocation(
@@ -291,13 +388,35 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			createNeuralNetButton.setLocation(textAreaXOffset - 13 + extraWidth / 2, 
 					outputNodesTextField.getY() + outputNodesTextField.getHeight());
 			
-			for(int i = 0; i < neurons.size(); i++){
+			training.setLocation(0 + extraWidth / 2,
+					createNeuralNetButton.getY() + createNeuralNetButton.getHeight() + bufferSpace / 2);
+			trainingFileTextField.setLocation(textAreaXOffset + extraWidth / 2,
+					training.getY() + training.getHeight());
+			trainButton.setLocation(textAreaXOffset - 13 + extraWidth / 2,
+					trainingFileTextField.getY() + trainingFileTextField.getHeight());
+			resetWeightsButton.setLocation(trainButton.getX() + trainButton.getWidth(),
+					trainButton.getY());
+			
+			for(int i = 0; neurons != null && i < neurons.size(); i++){
 				for(int j = 0; j < neurons.get(i).size(); j++){
 					neurons.get(i).get(j).SetPos(
 							extraWidth / 2 + textAreaWidth + bufferSpace + i * (neuronSize + distanceBetweenNeurons),
 							(int)(((j+1) / ((double)neurons.get(i).size() + 1)) * nodesHeightNeeded() + extraHeight / 2));
 				}
 			}
+ 			for(int i = 0; inputTextFields != null && i < inputTextFields.size(); i++){
+				inputTextFields.get(i).setLocation(neurons.get(0).get(i).GetX() - 60,
+						neurons.get(0).get(i).GetY() + neuronSize / 4);
+			}
+			for(int i = 0; outputTextFields != null && i < outputTextFields.size(); i++){
+				outputTextFields.get(i).setLocation(neurons.get(neurons.size()-1).get(i).GetX() + neuronSize,
+						neurons.get(neurons.size() - 1).get(i).GetY() + neuronSize / 4);
+			}
+			if(inputTextFields != null){
+				computeButton.setLocation(inputTextFields.get(inputTextFields.size() - 1).getX() - 40,
+						inputTextFields.get(inputTextFields.size() - 1).getY() + 40);
+			}
+			repaint();
 		}
 	}
 
@@ -305,8 +424,15 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource().equals(createNeuralNetButton)){
 			createNeuralNetButtonPressed();
-			this.setSize(panel.nodesWidthNeeded() + textAreaWidth + bufferSpace, 
-					panel.nodesHeightNeeded());
+		}
+		else if(e.getSource().equals(trainButton)){
+			trainButtonPressed();
+		}
+		else if(e.getSource().equals(computeButton)){
+			computeButtonPressed();
+		}
+		else if(e.getSource().equals(resetWeightsButton)){
+			resetWeightsButtonPressed();
 		}
 	}
 	@Override
