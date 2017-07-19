@@ -1,7 +1,6 @@
 import Jama.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -9,13 +8,14 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 public class NeuralNetwork implements Runnable{
 
 	private Thread t;
 	private boolean stopThread = false;
 	private boolean training = false, initialized = false;
+	private double currentCost;
+	private int currentIteration;
 	
 	private double[][] inputs, correctResults;
 	private int iterations;
@@ -68,6 +68,8 @@ public class NeuralNetwork implements Runnable{
 	}
 	public boolean IsTraining(){ return training; }
 	public boolean IsInitialized(){ return initialized; }
+	public double GetCurrentCost(){ return currentCost; }
+	public int GetCurrentIteration(){ return currentIteration; }
 	/*
 	 * Creates the network with the given dimensions and sizes.
 	 */
@@ -295,6 +297,7 @@ public class NeuralNetwork implements Runnable{
 	 * in the network. 
 	 * Useful for checking the matrix math done above.
 	 */
+	@SuppressWarnings("unused")
 	private ArrayList<Matrix> checkGradients(double[][] inputs, double[][] outputs){
 		//Arbitrary change in the weight
 		double e = 0.0001;
@@ -330,6 +333,7 @@ public class NeuralNetwork implements Runnable{
 	/*
 	 * Saves the current network configuration for future loading via XML 
 	 */
+	@SuppressWarnings("unused")
 	public void SaveConfiguration(String location){
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		factory.setValidating(true);
@@ -349,6 +353,7 @@ public class NeuralNetwork implements Runnable{
 	/*
 	 * Loads a configuration from a saved file and returns the created network 
 	 */
+	@SuppressWarnings("unused")
 	public static NeuralNetwork LoadConfiguration(String location){
 		NeuralNetwork n = new NeuralNetwork();
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -369,10 +374,10 @@ public class NeuralNetwork implements Runnable{
 		}
 		return n;
 	}
+	@SuppressWarnings("unchecked")
 	@Override
 	public void run() {
 		long startTime = System.nanoTime();
-		int randomizeIndex = 0;
 		iterations = 0;
 		minCost = cost(inputs, correctResults);
 		while(!stopThread){
@@ -405,19 +410,30 @@ public class NeuralNetwork implements Runnable{
 						//hiddenLayerWeightsMatrices.get(i).minus(dCostdEps));
 						hiddenLayerWeightsMatrices.get(i).minus(dCost_dWeight));
 			}
-			if(minCost > cost(inputs, correctResults)){
-				minCost = cost(inputs, correctResults);
+			currentCost = cost(inputs, correctResults);
+			
+			if(minCost > currentCost){
+				minCost = currentCost;
 				minHiddenLayerWeights = (ArrayList<Matrix>)hiddenLayerWeightsMatrices.clone();
 			}
-			if(iterations % 5000 == 0)
-				System.out.println("Iteration " + iterations + ": cost=" + cost(inputs, correctResults));
-			iterations++;	
+			//if(iterations % 5000 == 0)
+				//System.out.println("Iteration " + iterations + ": cost=" + cost(inputs, correctResults));
+			
+			
+			iterations++;
+			currentIteration = iterations;
 		}
+		
+		/*
+		 * Finished training
+		 */
 		System.out.println("Training took " + 
 				(System.nanoTime() - startTime) / 1000000000.0 + 
 				"s with " + iterations + " iterations.");
 		System.out.println("Resetting to lowest cost of " + minCost);
+		
 		hiddenLayerWeightsMatrices = (ArrayList<Matrix>)minHiddenLayerWeights.clone();
+		
 		stopThread = false;
 		training = false;
 	}

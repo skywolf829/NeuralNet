@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Scanner;
 
 import Jama.Matrix;
 
@@ -82,6 +81,9 @@ public class NeuralNetController {
 	public void SetHiddenLayerWeights(ArrayList<Matrix> w){
 		network.SetHiddenLayerWeights(w);
 		updateView();
+	}
+	public String TrainingInfo(){
+		return "Iteration " + network.GetCurrentIteration() + ": cost=" + network.GetCurrentCost();
 	}
 	private void updateView(){
 		view.SetNumInputNodes(network.GetNumInputNodes());
