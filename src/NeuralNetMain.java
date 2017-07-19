@@ -1,8 +1,4 @@
-import java.util.ArrayList;
-import java.util.Scanner;
 import javax.swing.*;
-
-import java.awt.*;
 
 public class NeuralNetMain{
 
@@ -10,7 +6,8 @@ public class NeuralNetMain{
 		SwingUtilities.invokeLater(new Runnable() {		            
 	        @Override
 	        public void run() {            
-	        		NeuralNetController network = new NeuralNetController();	
+	        		@SuppressWarnings("unused")
+					NeuralNetController network = new NeuralNetController();	
 	        }
 		});   
 		
