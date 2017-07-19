@@ -18,6 +18,7 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 	private int numHiddenLayers;
 	private int[] nodesPerLayer;
 	private int numOutputNodes;
+	private int mult = 1;
 	private ArrayList<Matrix> hiddenLayerWeightsMatrices;
 	
 	private ArrayList<ArrayList<Neuron>> neurons;
@@ -29,7 +30,8 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 	private JTextField numInputNodesTextField, hiddenLayersTextField, outputNodesTextField,
 		trainingFileTextField;
 	private ArrayList<JTextField> inputTextFields, outputTextFields;
-	private JButton createNeuralNetButton, trainButton, computeButton, resetWeightsButton;
+	public JButton createNeuralNetButton, trainButton, computeButton, resetWeightsButton,
+				stopTrainingButton;
 	
 	private int buttonHeight = 50,
 			buttonWidth = 150,
@@ -55,11 +57,15 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
         add(panel);
         
         setTitle("Neural network");
-        setLocationRelativeTo(null);  
+        setLocationRelativeTo(null);
+
         setFocusable(true);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(null);
         setSize(500, 400);
+        
+        Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+        this.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);
         
         pack();
         setVisible(true);
@@ -98,16 +104,19 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 		populateOutputTextFields();
 		controller.Initialize();
 		panel.repositionItems();		
-
+        
 	}
 	private void trainButtonPressed(){
 		training.setText("Training...");
-		panel.repositionItems();
-		controller.TrainOnSineFunction();
-		training.setText("Training complete!");
-		panel.repositionItems();
-		this.setSize(new Dimension(this.getWidth() + 1, this.getHeight()));
-		
+		controller.TrainOnXSquared();
+		this.setSize(this.getWidth() + 1, this.getHeight());
+        this.setSize(this.getWidth() - 1, this.getHeight());
+	}
+	private void stopTrainingButtonPressed(){
+		training.setText("Finished traning");
+		controller.StopTraining();
+		this.setSize(this.getWidth() + 1, this.getHeight());
+        this.setSize(this.getWidth() - 1, this.getHeight());
 	}
 	private void computeButtonPressed(){
 		double[] inputs = new double[inputTextFields.size()];
@@ -264,7 +273,7 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			numInputNodesTextField = new JTextField();
 			numInputNodesTextField.setEditable(true);
 			numInputNodesTextField.setColumns(4);
-			numInputNodesTextField.setText("2");
+			numInputNodesTextField.setText("1");
 			numInputNodesTextField.addActionListener(frame);
 			
 			hidden = new JLabel("Number of hidden nodes in each layer, separated by a space");
@@ -278,7 +287,7 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			outputNodesTextField = new JTextField();
 			outputNodesTextField.setEditable(true);
 			outputNodesTextField.setColumns(4);
-			outputNodesTextField.setText("2");
+			outputNodesTextField.setText("1");
 			outputNodesTextField.addActionListener(frame);
 			
 			createNeuralNetButton = new JButton("Create");
@@ -294,6 +303,9 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			trainButton = new JButton("Train network");
 			trainButton.addActionListener(frame);
 			
+			stopTrainingButton = new JButton("Stop training");
+			stopTrainingButton.addActionListener(frame);
+			
 			resetWeightsButton = new JButton("Reset weights");
 			resetWeightsButton.addActionListener(frame);
 			
@@ -307,9 +319,13 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			this.add(training);
 			this.add(trainingFileTextField);
 			this.add(trainButton);
+			this.add(stopTrainingButton);
 			this.add(resetWeightsButton);
 			
 			pack();
+			Dimension dim = Toolkit.getDefaultToolkit().getScreenSize();
+	        frame.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);
+		
 		}
 		@Override
 	    public void paintComponent(Graphics g) { 
@@ -394,6 +410,7 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 					training.getY() + training.getHeight());
 			trainButton.setLocation(textAreaXOffset - 13 + extraWidth / 2,
 					trainingFileTextField.getY() + trainingFileTextField.getHeight());
+			stopTrainingButton.setLocation(trainButton.getX(), trainButton.getY() + trainButton.getHeight());
 			resetWeightsButton.setLocation(trainButton.getX() + trainButton.getWidth(),
 					trainButton.getY());
 			
@@ -417,7 +434,7 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 						inputTextFields.get(inputTextFields.size() - 1).getY() + 40);
 			}
 			repaint();
-		}
+			}
 	}
 
 	@Override
@@ -433,6 +450,9 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 		}
 		else if(e.getSource().equals(resetWeightsButton)){
 			resetWeightsButtonPressed();
+		}
+		else if(e.getSource().equals(stopTrainingButton)){
+			stopTrainingButtonPressed();
 		}
 	}
 	@Override

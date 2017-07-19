@@ -4,20 +4,29 @@ import java.util.Scanner;
 import Jama.Matrix;
 
 public class NeuralNetController {
-	NeuralNet network;
+	NeuralNetwork network;
 	NeuralNetView view;
 	
 	public NeuralNetController(){	
-		network = new NeuralNet(this);		
+		network = new NeuralNetwork();		
 		view = new NeuralNetView(this);
 		view.setSize(800,  400);
+		updateView();
 	}
 	
 	public void Initialize(){		
 		network.Initialize();
+		updateView();
 	}
 	public double[] Forward(double[] inputs){
 		return network.Forward(inputs);
+	}
+	public boolean IsTraining(){
+		return network.IsTraining();
+	}
+	public void StopTraining(){
+		network.Stop();
+		updateView();
 	}
 	public void TrainOnSineFunction(){
 		ArrayList<double[]> data = new ArrayList<double[]>();
@@ -34,6 +43,7 @@ public class NeuralNetController {
 			r = new double[][] {{}};
 			network.Train(data.toArray(d), results.toArray(r));
 		}
+		updateView();
 	}
 	public void TrainOnXSquared(){
 		ArrayList<double[]> data = new ArrayList<double[]>();
@@ -50,66 +60,39 @@ public class NeuralNetController {
 			r = new double[][] {{}};
 			network.Train(data.toArray(d), results.toArray(r));
 		}
+		updateView();
 	}
 	public void ResetWeights(){
 		network.RandomizeWeights();
-	}
-	public void BeginTraining(){
-		ArrayList<double[]> data = new ArrayList<double[]>();
-		ArrayList<double[]> results = new ArrayList<double[]>();
-		createDataAndResults1(data, results);
-		double[][] d , r;
-		d = new double[][] {{}};
-		r = new double[][] {{}};
-		network.Train(data.toArray(d), results.toArray(r));
-		
-		Scanner keys = new Scanner(System.in);
-		boolean flag = true;
-		while(flag){
-			double x = keys.nextDouble();			
-			double y = keys.nextDouble();
-			double result[] = network.Forward(new double[] {x, y});			
-			System.out.println(result[0] + " " + result[1]);
-		}
+		updateView();
 	}
 	public void SetNumInputNodes(int n){
 		network.SetInputSize(n);
-		view.SetNumInputNodes(n);
+		updateView();
 	}
 	public void SetNodesPerLayer(int[] n){
 		network.SetNumHiddenLayers(n.length);
 		network.SetNodesInEachLayer(n);
-		view.SetNodesPerLayer(n);
+		updateView();
 	}
 	public void SetNumOutputNodes(int n){
 		network.SetOutputSize(n);
-		view.SetNumOutputNodes(n);
+		updateView();
 	}
-	public void SetHiddenLayerWeights(ArrayList<Matrix> h){
-		view.SetHiddenLayerWeights(h);
+	public void SetHiddenLayerWeights(ArrayList<Matrix> w){
+		network.SetHiddenLayerWeights(w);
+		updateView();
 	}
-	private static void createDataAndResults1(ArrayList<double[]> data, ArrayList<double[]> results){
-		//Lets work with a function y = x. Result is 0 if below line, 1 if above
-		for(int i = 0; i < 100; i++){
-			double x = Math.random() * 20 - 10;
-			double y = Math.random() * 20 - 10;
-			double result[];
-			if(y > x) result = new double[]{1, 0};
-			else result = new double[]{0, 1};
-			double[] d = {x, y};			
-			data.add(d);
-			results.add(result);			
-		}			
-	}
-	private static void createDataAndResults2(ArrayList<double[]> data, ArrayList<double[]> results){
-		//Lets work with a function y = x. Result is 0 if below line, 1 if above
-		for(int i = 0; i < 100; i++){
-			double x = Math.random() * 20 - 10;
-			double result = x;
-			double[] d = {x};			
-			data.add(d);
-			double[] r = {result};
-			results.add(r);			
-		}			
+	private void updateView(){
+		view.SetNumInputNodes(network.GetNumInputNodes());
+		view.SetNumOutputNodes(network.GetNumOutputNodes());
+		view.SetNodesPerLayer(network.GetNodesPerLayer());
+		if(network.GetWeights() != null)
+			view.SetHiddenLayerWeights(network.GetWeights());	
+		
+		view.createNeuralNetButton.setEnabled(!network.IsTraining());
+		view.trainButton.setEnabled(!network.IsTraining() && network.IsInitialized());
+		view.stopTrainingButton.setEnabled(network.IsTraining());
+		view.resetWeightsButton.setEnabled(network.IsInitialized());
 	}
 }
