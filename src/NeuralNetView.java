@@ -26,14 +26,14 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 	
 	private DrawingPanel panel;
 	
-	private JLabel input, hidden, output, training, trainingInfo;
+	public JLabel input, hidden, output, training, trainingInfo;
 	private JTextField numInputNodesTextField, hiddenLayersTextField, outputNodesTextField,
 		trainingFileTextField;
 	private ArrayList<JTextField> inputTextFields, outputTextFields;
 	public JButton createNeuralNetButton, trainButton, computeButton, resetWeightsButton,
 				stopTrainingButton;
 	
-	private Timer t;
+	private Timer t, t2;
 	
 	private int 
 			textAreaWidth = 330,
@@ -67,6 +67,8 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
         this.setLocation(dim.width/2-this.getSize().width/2, dim.height/2-this.getSize().height/2);
 
 		t = new Timer(3000, this);
+		t2 = new Timer(100, this);
+		t2.start();
         pack();
         setVisible(true);
 	}
@@ -108,7 +110,7 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 	}
 	private void trainButtonPressed(){
 		training.setText("Training...");
-		controller.TrainOnXSquared();
+		controller.TrainOnSineFunction();
 		this.setSize(this.getWidth() + 1, this.getHeight());
         this.setSize(this.getWidth() - 1, this.getHeight());
         t.start();
@@ -316,6 +318,7 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			
 			trainingInfo = new JLabel("");
 			
+			
 			this.add(input);
 			this.add(numInputNodesTextField);
 			this.add(hidden);
@@ -468,9 +471,12 @@ public class NeuralNetView extends JFrame implements ActionListener, ComponentLi
 			stopTrainingButtonPressed();
 		}
 		else if(e.getSource().equals(t)){
-			trainingInfo.setText(controller.TrainingInfo()); 
+			trainingInfo.setText(controller.TrainingInfo());
 			this.setSize(this.getWidth() + 1, this.getHeight());
 	        this.setSize(this.getWidth() - 1, this.getHeight());
+		}
+		else if(e.getSource().equals(t2)){
+			controller.UpdateView();
 		}
 	}
 	@Override

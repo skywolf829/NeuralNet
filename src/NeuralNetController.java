@@ -10,12 +10,12 @@ public class NeuralNetController {
 		network = new NeuralNetwork();		
 		view = new NeuralNetView(this);
 		view.setSize(800,  400);
-		updateView();
+		UpdateView();
 	}
 	
 	public void Initialize(){		
 		network.Initialize();
-		updateView();
+		UpdateView();
 	}
 	public double[] Forward(double[] inputs){
 		return network.Forward(inputs);
@@ -25,7 +25,7 @@ public class NeuralNetController {
 	}
 	public void StopTraining(){
 		network.Stop();
-		updateView();
+		UpdateView();
 	}
 	public void TrainOnSineFunction(){
 		ArrayList<double[]> data = new ArrayList<double[]>();
@@ -42,7 +42,7 @@ public class NeuralNetController {
 			r = new double[][] {{}};
 			network.Train(data.toArray(d), results.toArray(r));
 		}
-		updateView();
+		UpdateView();
 	}
 	public void TrainOnXSquared(){
 		ArrayList<double[]> data = new ArrayList<double[]>();
@@ -59,33 +59,33 @@ public class NeuralNetController {
 			r = new double[][] {{}};
 			network.Train(data.toArray(d), results.toArray(r));
 		}
-		updateView();
+		UpdateView();
 	}
 	public void ResetWeights(){
 		network.RandomizeWeights();
-		updateView();
+		UpdateView();
 	}
 	public void SetNumInputNodes(int n){
 		network.SetInputSize(n);
-		updateView();
+		UpdateView();
 	}
 	public void SetNodesPerLayer(int[] n){
 		network.SetNumHiddenLayers(n.length);
 		network.SetNodesInEachLayer(n);
-		updateView();
+		UpdateView();
 	}
 	public void SetNumOutputNodes(int n){
 		network.SetOutputSize(n);
-		updateView();
+		UpdateView();
 	}
 	public void SetHiddenLayerWeights(ArrayList<Matrix> w){
 		network.SetHiddenLayerWeights(w);
-		updateView();
+		UpdateView();
 	}
 	public String TrainingInfo(){
 		return "Iteration " + network.GetCurrentIteration() + ": cost=" + network.GetCurrentCost();
 	}
-	private void updateView(){
+	public void UpdateView(){
 		view.SetNumInputNodes(network.GetNumInputNodes());
 		view.SetNumOutputNodes(network.GetNumOutputNodes());
 		view.SetNodesPerLayer(network.GetNodesPerLayer());
@@ -96,5 +96,7 @@ public class NeuralNetController {
 		view.trainButton.setEnabled(!network.IsTraining() && network.IsInitialized());
 		view.stopTrainingButton.setEnabled(network.IsTraining());
 		view.resetWeightsButton.setEnabled(network.IsInitialized());
+		
+		
 	}
 }
